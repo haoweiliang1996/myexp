@@ -19,6 +19,7 @@ public class EXP {
     public static HashMap<String,String> patternMap = new HashMap<>();
     public static HashMap<String,Integer> count2=new HashMap<String,Integer>();
     public static HashMap<String,Integer> count3=new HashMap<String,Integer>();
+    public static String NoPattern="";
 
     public static void loadPattern(String strFile)
             throws Exception {
@@ -32,6 +33,14 @@ public class EXP {
             while ((line = br.readLine()) != null) {
                 line = line.trim();
                 if (!line.isEmpty()){
+                    if (!line.contains("\t")) {
+                        System.out.println("读入NoPattern");
+                        if (NoPattern != "")
+                            System.out.print("error" + "输入文件中有多个空项,即所谓其它消费");
+                        NoPattern=line;
+                        continue;
+                    }
+
                     int index = line.indexOf("\t");
                     String key = line.substring(0, index);
                     String value = line.substring(index+1).trim();
@@ -116,7 +125,7 @@ public class EXP {
                     continue;
                 }
                 if(!line.isEmpty()&&!line.startsWith("Cluster")){
-                    String[] line_c=line.split("\\t");
+                    String[] line_c=line.split("\\t",-1);//不忽略尾部的/t
                     if(line_c.length<4) {
                         System.out.println("drop" + line);
                         continue;
@@ -127,7 +136,7 @@ public class EXP {
                         if(line_cs.length()==0)
                             continue;
                         line_cs=line_cs.toUpperCase();
-                        System.out.println("debug"+line_cs);
+                        //System.out.println("debug"+line_cs);
                         line_cs = line_cs.trim();
                         line_cs = line_cs.replaceAll("\\s+", "，");
                         line_cs = line_cs.replaceAll("，，", "，");
@@ -184,7 +193,7 @@ public class EXP {
                     sb.append(key + "|");
             }
         }
-        String type= "无类别";
+        String type= NoPattern;
         if (sb.length() != 0)
             type = sb.substring(0,sb.length() - 1);
         return type ;// return type + "\t" + line; 修改
@@ -207,11 +216,15 @@ public class EXP {
                         break;
                     }
                 }
-                if(flag)
+                if(flag) {
+                    //System.out.println("debug"+s);
                     return true;
+                }
             }else{
-                if(line.contains(s))
+                if(Pattern.compile(s).matcher(line).find()) {
+                    //System.out.println("debug"+s);
                     return true;
+                }
             }
         }
         return false;
@@ -219,9 +232,9 @@ public class EXP {
     public static void main(String[] args) throws Exception
     {
         loadPattern("dat/问题类别模式.txt");
-        processCluster("dat/prase.in","dat/prase.out");
+        processCluster("dat/prase.in","dat/prase_out.txt");
 
-        File fileOut = new File("dat/贷款人所在行业.out");
+        File fileOut = new File("dat/贷款人所在行业.txt");
         fileOut.createNewFile();
         OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(fileOut));
         BufferedWriter bw = new BufferedWriter(osw);
@@ -233,11 +246,11 @@ public class EXP {
         while(iter.hasNext()){
             Entry<String,Integer> entry=iter.next();
             System.out.println(entry.getKey()+"\t"+entry.getValue());
-            bw.write(entry.getKey()+"\t"+entry.getValue());
+            bw.write(entry.getKey()+"\t"+entry.getValue()+"\n");
         }
         bw.close();
 
-        fileOut = new File("dat/贷款流向行业.out");
+        fileOut = new File("dat/贷款流向行业.txt");
         fileOut.createNewFile();
         osw = new OutputStreamWriter(new FileOutputStream(fileOut));
         bw = new BufferedWriter(osw);
@@ -248,7 +261,7 @@ public class EXP {
         while(iter.hasNext()){
             Entry<String,Integer> entry=iter.next();
             System.out.println(entry.getKey()+"\t"+entry.getValue());
-            bw.write(entry.getKey()+"\t"+entry.getValue());
+            bw.write(entry.getKey()+"\t"+entry.getValue()+"\n");
         }
         bw.close();
     }

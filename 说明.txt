@@ -1,2 +1,3 @@
 Category1.java 星号有约束
 Category2.java 星号无约束
+运行EXP.java即可
