@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
-
+import java.io.FileWriter;
 public class EXP {
     public static HashMap<String,String> patternMap = new HashMap<>();
     public static HashMap<String,Integer> count2=new HashMap<String,Integer>();
@@ -30,15 +30,15 @@ public class EXP {
             BufferedReader br = new BufferedReader(read);
             String line = null;
             while ((line = br.readLine()) != null) {
-
                 line = line.trim();
                 if (!line.isEmpty()){
-                    int index = line.indexOf(" ");
+                    int index = line.indexOf("\t");
                     String key = line.substring(0, index);
                     String value = line.substring(index+1).trim();
-
+                    value=value.toUpperCase();
                     value = value.replaceAll("\\+", "");
                     value = value.replaceAll("\\*", ".*");
+
                     //添加以处理 W1|W2*W3|W4的输入
                     String[] vauleArray=value.split("\\s+");
                     //System.out.println("debug"+vauleArray.length);
@@ -49,7 +49,6 @@ public class EXP {
                         //System.out.println("debug"+phaseArrary.length);
                         for (int j=0;j<phaseArrary.length;j++) {
                             String s = phaseArrary[j];
-
                             if (s.contains("|"))
                                 s = "(" + s + ")";
                             if (j != phaseArrary.length - 1)
@@ -80,37 +79,6 @@ public class EXP {
         }
     }
 
-
-    public static void prase_the_file(String inFile,String outFile)
-            throws Exception{
-        ArrayList<String> rList = new ArrayList<>();
-        File fileIn = new File(inFile);
-        File fileOut = new File(outFile);
-        fileOut.createNewFile();
-        OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(fileOut));
-        BufferedWriter bw = new BufferedWriter(osw);
-        if (fileIn.isFile()&&fileIn.exists()){
-            InputStreamReader read=new InputStreamReader(
-                    new FileInputStream(fileIn),"GBK"
-            );
-            BufferedReader br=new BufferedReader(read);
-            String line=null;
-            while((line =br.readLine()) !=null ){
-                line=line.trim();
-                if(!line.isEmpty()){
-                    String [] lineArray=line.split("\\t+");
-                    //判断是否四个列都齐全
-                    if(lineArray.length<4) {
-                        System.out.println("not full ");
-                        continue;
-                    }
-                }
-            }
-        }
-        else{
-            System.out.print("找不到要读入的四列文件");
-        }
-    }
 
     public static void processCluster(String inFile, String outFile)
             throws Exception {
@@ -148,7 +116,7 @@ public class EXP {
                     continue;
                 }
                 if(!line.isEmpty()&&!line.startsWith("Cluster")){
-                    String[] line_c=line.split("\\s+");
+                    String[] line_c=line.split("\\t");
                     if(line_c.length<4) {
                         System.out.println("drop" + line);
                         continue;
@@ -156,13 +124,17 @@ public class EXP {
                     String resultTemp=line;
                     for(int i=2;i<4;i++) {
                         String line_cs=line_c[i];
+                        if(line_cs.length()==0)
+                            continue;
+                        line_cs=line_cs.toUpperCase();
+                        System.out.println("debug"+line_cs);
                         line_cs = line_cs.trim();
                         line_cs = line_cs.replaceAll("\\s+", "，");
                         line_cs = line_cs.replaceAll("，，", "，");
                         line_cs = line_cs.replaceAll("，，，", "，");
                         String result = type(line_cs).trim();
                         //统计行业
-                        String[] result_split=result.split("|");
+                        String[] result_split=result.split("\\|");
                         for(String str:result_split){
                             if(i==2){
                                 if (count2.containsKey(str))
@@ -177,9 +149,10 @@ public class EXP {
                                     count3.put(str,1);
                             }
                         }
+                        //统计行业
                         resultTemp += "\t" + result;
-                        rList.add(result);
                     }
+                    rList.add(resultTemp);
                     continue;
                 }
                 if (line.isEmpty())
@@ -189,10 +162,6 @@ public class EXP {
 
             for(String e : rList)
                 bw.write(e + "\n");
-			/*for(String e : rList)
-				if(e.startsWith("无类别") && e.length() > 20){
-					bw.write(e + "\n");
-				}*/
 
             br.close();
             bw.close();
@@ -247,21 +216,41 @@ public class EXP {
         }
         return false;
     }
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
+        loadPattern("dat/问题类别模式.txt");
+        processCluster("dat/prase.in","dat/prase.out");
+
+        File fileOut = new File("dat/贷款人所在行业.out");
+        fileOut.createNewFile();
+        OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(fileOut));
+        BufferedWriter bw = new BufferedWriter(osw);
+        //BufferedWriter bw=new BufferedWriter(new FileWriter("dat/贷款人所在行业.txt"));
 
         System.out.println("贷款人所在行业");
+        bw.write("//贷款人所在行业\n");
         Iterator<Entry<String, Integer>> iter = count2.entrySet().iterator();
         while(iter.hasNext()){
             Entry<String,Integer> entry=iter.next();
             System.out.println(entry.getKey()+"\t"+entry.getValue());
+            bw.write(entry.getKey()+"\t"+entry.getValue());
         }
+        bw.close();
+
+        fileOut = new File("dat/贷款流向行业.out");
+        fileOut.createNewFile();
+        osw = new OutputStreamWriter(new FileOutputStream(fileOut));
+        bw = new BufferedWriter(osw);
+
+        bw.write("//贷款流向行业\n");
         System.out.println("贷款流向行业");
         iter=count3.entrySet().iterator();
         while(iter.hasNext()){
             Entry<String,Integer> entry=iter.next();
             System.out.println(entry.getKey()+"\t"+entry.getValue());
+            bw.write(entry.getKey()+"\t"+entry.getValue());
         }
+        bw.close();
     }
 }
 
