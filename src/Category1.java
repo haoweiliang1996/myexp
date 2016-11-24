@@ -45,7 +45,7 @@ public class Category1 {
                     String[] vauleArray=value.split("\\s+");
                     StringBuffer sb=new StringBuffer();
                     for (int i=0;i<vauleArray.length;i++){
-                        String[] phaseArrary=vauleArray[i].split(".\\*");
+                        String[] phaseArrary=vauleArray[i].split("\\.\\*");
                         for (int j=0;j<phaseArrary.length;j++) {
                             String s = phaseArrary[j];
 
@@ -59,10 +59,12 @@ public class Category1 {
                         if(i!=vauleArray.length-1)
                             sb.append("|");
                     }
-                    if (sb.length()>0) {
-                        value = sb.toString();
-                        System.out.println(value);
-                    }
+					if (sb.length()>0) {
+						value = sb.toString();
+						System.out.println(value);
+					}
+                    //添加以处理 W1|W2*W3|W4的输入
+
                     if(patternMap.containsKey(key))
                         value = patternMap.get(key)+ "|" + value;
                     patternMap.put(key, value);
