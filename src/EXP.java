@@ -8,17 +8,17 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.io.FileWriter;
+
 public class EXP {
     public static HashMap<String,String> patternMap = new HashMap<>();
     public static HashMap<String,Integer> count2=new HashMap<String,Integer>();
     public static HashMap<String,Integer> count3=new HashMap<String,Integer>();
+    public static HashMap<String,String[]> pattern_to_class=new HashMap<>();
+    public static HashMap<String,Vector<String>> pattern_to_deny_pattern=new HashMap<>();
     public static String NoPattern="";
 
     public static void loadPattern(String strFile)
@@ -35,7 +35,7 @@ public class EXP {
                 if (!line.isEmpty()){
                     if (!line.contains("\t")) {
                         System.out.println("读入NoPattern");
-                        if (NoPattern != "")
+                        if (!NoPattern .equals(""))
                             System.out.print("error" + "输入文件中有多个空项,即所谓其它消费");
                         NoPattern=line;
                         continue;
@@ -56,6 +56,7 @@ public class EXP {
                         //System.out.print("debug"+vauleArray[i]);
                         String[] phaseArrary=vauleArray[i].split("\\.\\*");
                         //System.out.println("debug"+phaseArrary.length);
+                        String nowPrasePattern="";
                         for (int j=0;j<phaseArrary.length;j++) {
                             String s = phaseArrary[j];
                             if (s.contains("|"))
@@ -64,7 +65,11 @@ public class EXP {
                                 s += ".*";
                             //System.out.println("debug"+s);
                             sb.append(s);
+                            if (j==phaseArrary.length-1)
+                                nowPrasePattern=sb.toString();
                         }
+                        System.out.println("debug "+nowPrasePattern);
+                        pattern_to_class.put(nowPrasePattern,key.split("\\|"));
                         if(i!=vauleArray.length-1)
                             //不同的模式间的间隔符是@
                             sb.append("@");
@@ -82,6 +87,8 @@ public class EXP {
             }
             br.close();
             System.out.println(patternMap);
+            System.out.println("debug"+"pattern_to_class "+pattern_to_class.toString());
+            System.out.println("debug "+"pattern_to_deny_pattern "+pattern_to_deny_pattern.toString());
         }
         else {
             System.out.println("找不到指定的文件");
@@ -180,26 +187,54 @@ public class EXP {
         }
     }
 
+    //判断一个sentence的class，
     private static String type(String line) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         Iterator<Entry<String, String>> iter = patternMap.entrySet().iterator();
+
         while(iter.hasNext()){
             Entry<String, String> entry = iter.next();
-            String key = entry.getKey();
+            //String key = entry.getKey();
             String regex = entry.getValue();
 
-            if (isKeyType(regex,line)){
-                if(sb.indexOf(key) == -1)
-                    sb.append(key + "|");
+            String matchedPattern=isKeyType(regex,line);
+            if (matchedPattern.length()!=0){
+                if(sb.indexOf(matchedPattern) == -1)
+                    sb.append(matchedPattern + "@");
+
             }
         }
         String type= NoPattern;
-        if (sb.length() != 0)
-            type = sb.substring(0,sb.length() - 1);
+        if (sb.length() != 0) {
+            String[] patternList = sb.substring(0, sb.length() - 1).split("@");//去除末尾的‘|’
+            HashSet<String> denyPatternSet=new HashSet<String>();
+            for(String pa:patternList){
+                if(!pattern_to_deny_pattern.containsKey(pa))
+                    continue;
+                for(String denyPattern:pattern_to_deny_pattern.get(pa)){
+                    denyPatternSet.add(denyPattern);
+                }
+            }
+
+            sb=new StringBuilder();
+            for(String candidatePattern:patternList){
+                if (!denyPatternSet.contains(candidatePattern)){
+                    if(!pattern_to_class.containsKey(candidatePattern))
+                        System.out.println("error "+candidatePattern+" not included in pattern_to_class");
+                    else
+                        for(String candidateClass:pattern_to_class.get(candidatePattern))
+                            if(sb.indexOf(candidateClass)==-1)
+                                sb.append(candidateClass+"|");
+                }
+            }
+            if(sb.length()>0)
+                type=sb.substring(0,sb.length()-1);
+        }
         return type ;// return type + "\t" + line; 修改
     }
 
-    private static boolean isKeyType(String regex, String line) {
+    //返回值是一个匹配上一个class时，匹配到的模式
+    private static String isKeyType(String regex, String line) {
         String[] regexs = regex.split("@");
         for(String s : regexs){
             if(s.contains(".*")){
@@ -218,19 +253,24 @@ public class EXP {
                 }
                 if(flag) {
                     //System.out.println("debug"+s);
-                    return true;
+                    return s;
                 }
             }else{
                 if(Pattern.compile(s).matcher(line).find()) {
                     //System.out.println("debug"+s);
-                    return true;
+                    return s;
                 }
             }
         }
-        return false;
+        return "";
     }
     public static void main(String[] args) throws Exception
     {
+        //just debug
+        Vector<String> vTemp=new Vector<>();vTemp.add("葡萄.*种植");
+        pattern_to_deny_pattern.put("种植.*投资",vTemp);
+        //just debug
+
         loadPattern("dat/问题类别模式.txt");
         processCluster("dat/prase.in","dat/prase_out.txt");
 
