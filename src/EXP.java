@@ -74,7 +74,7 @@ public class EXP {
                         continue;
                     }
                     String key=line.substring(0,splitIndex);
-                    key_to_keyid.put(key,keyList.size());
+                    key_to_keyid.put(key.trim(),keyList.size());
                     keyList.add(key);
                 }
             }
@@ -141,6 +141,13 @@ public class EXP {
                     StringBuffer sb=new StringBuffer();
                     for (int i=0;i<vauleArray.length;i++){
                         //System.out.print("debug"+vauleArray[i]);
+                        //《处理要去除的模式的输入
+                        int throwBeginIndex=vauleArray[i].indexOf('-');
+                        if(throwBeginIndex!=-1){
+                            String[] throwStrList=vauleArray[i].substring(throwBeginIndex).split(",");//to-do
+                            vauleArray[i]=vauleArray[i].substring(0,throwBeginIndex);
+                        }
+                        //处理要去除的模式的输入》
                         String[] phaseArrary=vauleArray[i].split("\\.\\*");
                         //System.out.println("debug"+phaseArrary.length);
                         String nowPrasePattern="";
