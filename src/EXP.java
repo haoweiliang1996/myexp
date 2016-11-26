@@ -20,6 +20,93 @@ public class EXP {
     public static HashMap<String,String[]> pattern_to_class=new HashMap<>();
     public static HashMap<String,Vector<String>> pattern_to_deny_pattern=new HashMap<>();
     public static String NoPattern="";
+    public static myTreeKount treeCount;
+
+    //用数组搞了个前向树，用来找到class的所有父class
+    public static class myTreeKount{
+        private static class flag{
+            public int ROOT=-2;
+            public int UN_PRASE=-1;
+        }
+        private flag FLAG=new flag();
+        private int pre[];
+        private HashMap<String,Integer> key_to_keyid=new HashMap<>();
+        private Vector<String> keyList=new Vector<>();
+        private int countHeadTab(String s){
+            int kount=0;
+            for(char c:s.toCharArray()){
+                if(c=='\t')
+                    kount++;
+                else
+                    break;
+            }
+            return kount;
+        }
+
+        private void buildTree(int keyId,int keyIdOfFather){
+            if(keyId>=keyList.size()){
+                System.out.println("error "+"建数时key数组越界 keyId: "+keyId);
+                return;
+            }
+
+            pre[keyId]=keyIdOfFather;
+            //if(keyId==keyList.size()-1||(countHeadTab(keyList.get(keyId))>=countHeadTab(keyList.get(keyId+1)))) //如果处理到了keyList结尾或者tab不比下一条语句少的就结束
+              //  return;
+            for(int i=keyId+1;i<keyList.size();i++) {
+                if(countHeadTab(keyList.get(keyId))>=countHeadTab(keyList.get(i)))
+                    return;
+                if(pre[i]==FLAG.UN_PRASE)
+                    buildTree(i, keyId);
+            }
+        }
+        public myTreeKount(String strFile) throws Exception
+        {
+            File file=new File(strFile);
+            if(file.isFile()&&file.exists()){
+                InputStreamReader read = new InputStreamReader(new FileInputStream(
+                        file), "GBK");
+                BufferedReader br = new BufferedReader(read);
+                String line = null;
+                while ((line = br.readLine()) != null) {
+                    int splitIndex=line.lastIndexOf('\t');
+                    if(splitIndex==-1) {
+                        System.out.println("info "+"这行的class无效");
+                        continue;
+                    }
+                    String key=line.substring(0,splitIndex);
+                    key_to_keyid.put(key,keyList.size());
+                    keyList.add(key);
+                }
+            }
+            else
+                System.out.println("info "+"这行的class无效");
+            pre=new int[keyList.size()];
+            for(int i=0;i<pre.length;i++)
+                pre[i]=FLAG.UN_PRASE;//根节点
+            for(int i=0;i<pre.length;i++)
+                if(pre[i]==FLAG.UN_PRASE) {
+                    buildTree(i,FLAG.ROOT);
+                }
+            for(int i:pre){
+                System.out.println(i);
+            }
+        }
+
+        public int getFatherKeyId(int keyid){
+            return pre[keyid];
+        }
+        public int getKeyId(String key){
+            System.out.println("debug getKeyId:"+key);
+            return key_to_keyid.get(key);
+        }
+        public String getKeyById(int id){
+           // System.out.println("debug getKeyById id:"+id);
+            if(id>=keyList.size())
+                System.out.println("KeyList下标越界："+id+" "+keyList.size());
+            return keyList.get(id);
+        }
+    }
+
 
     public static void loadPattern(String strFile)
             throws Exception {
@@ -36,7 +123,7 @@ public class EXP {
                     if (!line.contains("\t")) {
                         System.out.println("读入NoPattern");
                         if (!NoPattern .equals(""))
-                            System.out.print("error" + "输入文件中有多个空项,即所谓其它消费");
+                            System.out.println("error" + "输入文件中有多个空项,即所谓其它消费");
                         NoPattern=line;
                         continue;
                     }
@@ -151,18 +238,23 @@ public class EXP {
                         String result = type(line_cs).trim();
                         //统计行业
                         String[] result_split=result.split("\\|");
+                        HashSet<String> keyIdSet=new HashSet<>();
                         for(String str:result_split){
-                            if(i==2){
-                                if (count2.containsKey(str))
-                                    count2.put(str,count2.get(str)+1);
-                                else
-                                    count2.put(str,1);
+                            for(int id=treeCount.getKeyId(str);treeCount.getFatherKeyId(id)!=-2;id=treeCount.getFatherKeyId(id)){
+                                keyIdSet.add(treeCount.getKeyById(id));
                             }
-                            else if(i==3){
-                                if (count3.containsKey(str))
-                                    count3.put(str,count3.get(str)+1);
+                        }
+                        for(String str:keyIdSet) {
+                            if (i == 2) {
+                                if (count2.containsKey(str))
+                                    count2.put(str, count2.get(str) + 1);
                                 else
-                                    count3.put(str,1);
+                                    count2.put(str, 1);
+                            } else if (i == 3) {
+                                if (count3.containsKey(str))
+                                    count3.put(str, count3.get(str) + 1);
+                                else
+                                    count3.put(str, 1);
                             }
                         }
                         //统计行业
@@ -266,11 +358,12 @@ public class EXP {
     }
     public static void main(String[] args) throws Exception
     {
-        //just debug
+        //just for test
         Vector<String> vTemp=new Vector<>();vTemp.add("葡萄.*种植");
         pattern_to_deny_pattern.put("种植.*投资",vTemp);
-        //just debug
+        //just for test
 
+        treeCount=new myTreeKount("dat/问题类别模式.txt");
         loadPattern("dat/问题类别模式.txt");
         processCluster("dat/prase.in","dat/prase_out.txt");
 
