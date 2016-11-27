@@ -22,20 +22,19 @@ public class EXP {
     public static HashMap<String,Integer> count2=new HashMap<String,Integer>();
     public static HashMap<String,Integer> count3=new HashMap<String,Integer>();
     public static HashMap<String,Vector<String>> pattern_to_deny_pattern=new HashMap<>();
+    public static Vector<String> keyList=new Vector<>();
     public static String NoPattern="";
     public static myTreeKount treeCount;
 
     //用数组搞了个前向树，用来找到class的所有父class
     public static class myTreeKount{
         private static class flag{
-            public int ROOT=-2;
+            public int ROOT=-2; //pre[i]为-2时，节点是树根
             public int UN_PRASE=-1;
         }
         private flag FLAG=new flag();
         private int pre[];
         private HashMap<String,Integer> key_to_keyid=new HashMap<>();
-        private Vector<String> keyList=new Vector<>();
-
         private int countHeadTab(String s){
             int kount=0;
             for(char c:s.toCharArray()){
@@ -55,8 +54,9 @@ public class EXP {
 
             pre[keyId]=keyIdOfFather;
             for(int i=keyId+1;i<keyList.size();i++) {
-                if(countHeadTab(keyList.get(keyId))>=countHeadTab(keyList.get(i)))
+                if(countHeadTab(keyList.get(keyId))>=countHeadTab(keyList.get(i))) {
                     return;
+                }
                 if(pre[i]==FLAG.UN_PRASE)
                     buildTree(i, keyId);
             }
@@ -96,9 +96,6 @@ public class EXP {
                 if(pre[i]==FLAG.UN_PRASE) {
                     buildTree(i,FLAG.ROOT);
                 }
-            for(int i:pre){
-                System.out.println(i);
-            }
         }
 
         public int getFatherKeyId(int keyid){
@@ -464,11 +461,10 @@ public class EXP {
 
         System.out.println("贷款人所在行业");
         bw.write("//贷款人所在行业\n");
-        Iterator<Entry<String, Integer>> iter = count2.entrySet().iterator();
-        while(iter.hasNext()){
-            Entry<String,Integer> entry=iter.next();
-            System.out.println(entry.getKey()+"\t"+entry.getValue());
-            bw.write(entry.getKey()+"\t"+entry.getValue()+"\n");
+        for(String str:keyList) {
+            if (count2.containsKey(str)) {
+                bw.write(str + "\t" + count2.get(str) + "\n");
+            }
         }
         bw.close();
 
@@ -479,12 +475,11 @@ public class EXP {
 
         bw.write("//贷款流向行业\n");
         System.out.println("贷款流向行业");
-        iter=count3.entrySet().iterator();
-        while(iter.hasNext()){
-            Entry<String,Integer> entry=iter.next();
-            System.out.println(entry.getKey()+"\t"+entry.getValue());
-            bw.write(entry.getKey()+"\t"+entry.getValue()+"\n");
-        }
+            for(String str:keyList) {
+                if (count3.containsKey(str)) {
+                    bw.write(str + "\t" + count3.get(str) + "\n");
+                }
+            }
         bw.close();
     }
 }
