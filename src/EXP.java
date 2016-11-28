@@ -48,7 +48,7 @@ public class EXP {
 
         private void buildTree(int keyId,int keyIdOfFather){
             if(keyId>=keyList.size()){
-                System.out.println("error "+"建数时key数组越界 keyId: "+keyId);
+                System.out.println("error "+"建树时key数组越界 keyId: "+keyId);
                 return;
             }
 
@@ -72,14 +72,8 @@ public class EXP {
                 String line = null;
                 while ((line = br.readLine()) != null) {
                     int splitIndex=line.lastIndexOf('\t');
-                    if(splitIndex==-1) {
-                        if(!line.equals(NoPattern)){
-                            System.out.println("info "+"这行的class无效");
-                            continue;
-                        }
-                    }
                     String key;
-                    if(splitIndex==-1)
+                    if(splitIndex==-1|!line.trim().contains("\t"))
                         key=line;
                     else
                         key=line.substring(0,splitIndex);
@@ -128,11 +122,12 @@ public class EXP {
                 line = line.trim();
                 if (!line.isEmpty()){
                     if (!line.contains("\t")) {
-                        System.out.println("读入NoPattern");
+                        continue;
+                       /* System.out.println("读入NoPattern");
                         if (!NoPattern .equals(""))
                             System.out.println("error" + "输入文件中有多个空项,即所谓其它消费");
                         NoPattern=line;
-                        continue;
+                        continue;*/
                     }
 
                     int index = line.indexOf("\t");
@@ -341,6 +336,7 @@ public class EXP {
             System.out.println("debug "+"matchedPattern "+matchedPattern);
             sb.append(matchedPattern + "@");
         }
+
         String type= NoPattern;
         if (sb.length() != 0) {
             System.out.println("debug typeResult"+sb.substring(0,sb.length()-1));
@@ -356,7 +352,7 @@ public class EXP {
                 classList[i]=temp[2];
             }
             HashSet<String> denyPatternSet=new HashSet<String>();
-            for(String pa:patternList){
+            for(String pa:patternList){//匹配到的模式，由这些模式得到需要删除的模式的集合，若发现匹配到的串符合要删除的模式，则删除这些串
                 if(!pattern_to_deny_pattern.containsKey(pa))
                 {
                     System.out.println("error+ "+pa+"没有出现在 pattern_to_deny_pattern");
@@ -369,10 +365,10 @@ public class EXP {
 
             sb=new StringBuilder();
 
-            //需要包括且仅仅包括？ to-do 不然不能处理 		外资投资！！！！	投资*苹果*产品-苹果*产品
-            for(int i=0;i<phaseList.length;i++){
-                boolean flag1=false;
-                for(String s:denyPatternSet){
+            //需要包括且仅仅包括不然不能处理 		外资投资！！！！	投资*苹果*产品-苹果*产品
+            for(int i=0;i<phaseList.length;i++){//所有匹配到的串
+                boolean flag1=false;//flag1为true时删除这个匹配到的串
+                for(String s:denyPatternSet){//由于这些串引入的否定list
                     if(s.contains(".*")){
                         String[] al = s.split("\\.\\*");
                         boolean flag=true;
@@ -451,6 +447,7 @@ public class EXP {
 
         loadPattern("dat/问题类别模式.txt");
         treeCount=new myTreeKount("dat/问题类别模式.txt");
+        NoPattern=keyList.get(keyList.size()-1).trim();
         processCluster("dat/prase.in","dat/prase_out.txt");
 
         File fileOut = new File("dat/贷款人所在行业.txt");
