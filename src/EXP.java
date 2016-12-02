@@ -299,6 +299,7 @@ public class EXP {
                         //统计行业
 
                         resultTemp += "\t" + result;
+                        resultTemp=result;//为了匹配下一个tree模块
                     }
                     rList.add(resultTemp);
                     continue;
@@ -365,6 +366,7 @@ public class EXP {
 
             sb=new StringBuilder();
 
+            HashSet<String> denyPhaseSet=new HashSet<String>();
             //需要包括且仅仅包括不然不能处理 		外资投资！！！！	投资*苹果*产品-苹果*产品
             for(int i=0;i<phaseList.length;i++){//所有匹配到的串
                 boolean flag1=false;//flag1为true时删除这个匹配到的串
@@ -394,8 +396,24 @@ public class EXP {
                         }
                     }
                 }
-                if(!flag1)
-                    sb.append(classList[i]+"|");
+                if(flag1){
+                    denyPhaseSet.add(phaseList[i]);
+                }
+            }
+
+            HashSet<String> denyClassSet=new HashSet<>();
+            for(String denyPhase:denyPhaseSet){
+                for(int i=0;i<patternList.length;i++){
+                    if(isKeyType(patternList[i],denyPhase).length()!=0)//应该被deny的phase匹配上了某个pattern那么这个pattern对于的class应该被禁止
+                    {
+                        denyClassSet.add(classList[i]);
+                    }
+                }
+            }
+
+            for(String cl:classList){
+                if(!denyClassSet.contains(cl))
+                    sb.append(cl+"|");
             }
             if(sb.length()>0)
                 type=sb.substring(0,sb.length()-1);
